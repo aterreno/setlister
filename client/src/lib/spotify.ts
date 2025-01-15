@@ -39,9 +39,9 @@ export async function createPlaylist(accessToken: string, userId: string, name: 
           }
         }
       );
-      
+
       if (!searchResponse.ok) return null;
-      
+
       const { tracks } = await searchResponse.json();
       return tracks.items[0]?.uri;
     })
@@ -80,7 +80,7 @@ export function useCreateSpotifyPlaylist() {
       const user = await userResponse.json();
 
       const playlist = await createPlaylist(user.accessToken, user.spotifyId, name, songs);
-      
+
       await fetch("/api/playlists", {
         method: "POST",
         headers: {
@@ -107,6 +107,25 @@ export function useCreateSpotifyPlaylist() {
         description: "Failed to create playlist",
         variant: "destructive"
       });
+    }
+  });
+}
+
+export function useSharePlaylist() {
+  return useMutation({
+    mutationFn: async (playlistId: number) => {
+      const response = await fetch(`/api/playlists/${playlistId}/share`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to share playlist");
+      }
+
+      return response.json();
     }
   });
 }

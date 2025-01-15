@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const users = pgTable("users", {
@@ -16,6 +16,9 @@ export const playlists = pgTable("playlists", {
   spotifyId: text("spotify_id").notNull(),
   setlistId: text("setlist_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  shareId: text("share_id").unique(), // Unique identifier for sharing
+  isPublic: boolean("is_public").default(false), // Controls if playlist is publicly shareable
+  shares: integer("shares_count").default(0), // Track number of times shared
 });
 
 export const insertUserSchema = createInsertSchema(users);

@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as SpotifyStrategy } from "passport-spotify";
+import { nanoid } from 'nanoid';
 import { and, eq } from "drizzle-orm";
 import { db } from "@db";
 import { users, playlists } from "@db/schema";
@@ -189,6 +190,114 @@ export function registerRoutes(app: Express): Server {
     } catch (err) {
       console.error('Failed to create playlist:', err);
       res.status(500).json({ error: 'Failed to create playlist' });
+    }
+  });
+
+  // Generate share link for a playlist
+  app.post('/api/playlists/:id/share', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    try {
+      const playlistId = parseInt(req.params.id);
+      const [playlist] = await db.select()
+        .from(playlists)
+        .where(
+          and(
+            eq(playlists.id, playlistId),
+            eq(playlists.userId, (req.user as any).id)
+          )
+        );
+
+      if (!playlist) {
+        return res.status(404).json({ error: 'Playlist not found' });
+      }
+
+      // Generate a unique share ID if not exists
+      if (!playlist.shareId) {
+        const shareId = nanoid(10); // Generate a short unique ID
+        await db.update(playlists)
+          .set({ 
+            shareId, 
+            isPublic: true,
+            shares: (playlist.shares || 0) + 1 
+          })
+          .where(eq(playlists.id, playlistId));
+
+        return res.json({ 
+          shareUrl: `${config.baseUrl}/shared/${shareId}`,
+          shareId 
+        });
+      }
+
+      // Increment share count
+      await db.update(playlists)
+        .set({ shares: (playlist.shares || 0) + 1 })
+        .where(eq(playlists.id, playlistId));
+
+      return res.json({ 
+        shareUrl: `${config.baseUrl}/shared/${playlist.shareId}`,
+        shareId: playlist.shareId 
+      });
+    } catch (error) {
+      console.error('Failed to share playlist:', error);
+      res.status(500).json({ error: 'Failed to share playlist' });
+    }
+  });
+
+  // Get shared playlist
+  app.get('/api/shared/:shareId', async (req, res) => {
+    try {
+      const { shareId } = req.params;
+      const [playlist] = await db.select()
+        .from(playlists)
+        .where(
+          and(
+            eq(playlists.shareId, shareId),
+            eq(playlists.isPublic, true)
+          )
+        );
+
+      if (!playlist) {
+        return res.status(404).json({ error: 'Shared playlist not found' });
+      }
+
+      // Get the Spotify playlist details
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, playlist.userId)
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: 'Playlist owner not found' });
+      }
+
+      const spotifyResponse = await fetch(
+        `https://api.spotify.com/v1/playlists/${playlist.spotifyId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${user.accessToken}`
+          }
+        }
+      );
+
+      if (!spotifyResponse.ok) {
+        return res.status(500).json({ error: 'Failed to fetch playlist details' });
+      }
+
+      const spotifyPlaylist = await spotifyResponse.json();
+
+      return res.json({
+        id: playlist.id,
+        spotifyId: playlist.spotifyId,
+        name: spotifyPlaylist.name,
+        description: spotifyPlaylist.description,
+        tracks: spotifyPlaylist.tracks.items,
+        shareCount: playlist.shares
+      });
+    } catch (error) {
+      console.error('Failed to get shared playlist:', error);
+      res.status(500).json({ error: 'Failed to get shared playlist' });
     }
   });
 

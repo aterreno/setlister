@@ -1,10 +1,11 @@
 import type { Setlist } from "@/lib/setlist";
-import { useCreateSpotifyPlaylist } from "@/lib/spotify";
+import { useCreateSpotifyPlaylist, useSharePlaylist } from "@/lib/spotify";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { parse, format } from "date-fns";
-import { Music, MapPin } from "lucide-react";
+import { Music, MapPin, Share2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SetlistDisplayProps {
   setlists: Setlist[];
@@ -20,6 +21,8 @@ export function SetlistDisplay({
   user 
 }: SetlistDisplayProps) {
   const createPlaylist = useCreateSpotifyPlaylist();
+  const sharePlaylist = useSharePlaylist();
+  const { toast } = useToast();
 
   const handleCreatePlaylist = async (setlist: Setlist) => {
     const songs = setlist.sets.set
@@ -28,17 +31,52 @@ export function SetlistDisplay({
 
     const name = `${setlist.artist.name} @ ${setlist.venue.name} - ${setlist.eventDate}`;
 
-    createPlaylist.mutate({ name, songs });
+    try {
+      const playlist = await createPlaylist.mutateAsync({ name, songs });
+
+      // After successful creation, show share button
+      toast({
+        title: "Success!",
+        description: "Playlist created successfully. Click share to share it with others!",
+      });
+
+      return playlist;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create playlist",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSharePlaylist = async (playlistId: number) => {
+    try {
+      const { shareUrl } = await sharePlaylist.mutateAsync(playlistId);
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+
+      toast({
+        title: "Share link copied!",
+        description: "Playlist share link has been copied to your clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to share playlist",
+        variant: "destructive"
+      });
+    }
   };
 
   const formatEventDate = (dateStr: string) => {
     try {
-      // Parse the date string (format: "DD-MM-YYYY")
       const parsedDate = parse(dateStr, "dd-MM-yyyy", new Date());
       return format(parsedDate, "MMMM d, yyyy");
     } catch (error) {
       console.error("Error parsing date:", dateStr, error);
-      return dateStr; // Return original string if parsing fails
+      return dateStr;
     }
   };
 
@@ -63,12 +101,24 @@ export function SetlistDisplay({
                   </div>
                 </div>
                 {user && (
-                  <Button
-                    onClick={() => handleCreatePlaylist(setlist)}
-                    disabled={createPlaylist.isPending}
-                  >
-                    Create Playlist
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleCreatePlaylist(setlist)}
+                      disabled={createPlaylist.isPending}
+                    >
+                      Create Playlist
+                    </Button>
+                    {createPlaylist.data && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleSharePlaylist(createPlaylist.data.id)}
+                        disabled={sharePlaylist.isPending}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </CardHeader>
