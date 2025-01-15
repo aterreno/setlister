@@ -19,6 +19,8 @@ export function registerRoutes(app: Express): Server {
 
   console.log("Environment:", config.isDev ? "development" : "production");
   console.log("Using Spotify callback URL:", config.auth.callbackUrl);
+  console.log("Cookie Domain:", config.auth.cookieDomain);
+  console.log("Base URL:", config.baseUrl);
 
   // Session configuration with proper cookie settings
   app.use(session({
@@ -26,20 +28,29 @@ export function registerRoutes(app: Express): Server {
       checkPeriod: 86400000 // prune expired entries every 24h
     }),
     secret: config.session.secret,
-    resave: false,
-    saveUninitialized: false,
-    proxy: config.isProd,
+    resave: true, // Changed to true to ensure session is saved
+    saveUninitialized: true, // Changed to true to ensure cookie is set
+    proxy: config.isProd, // Ensure proxy settings for production
     cookie: {
       secure: config.isProd,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: config.isProd ? 'none' : 'lax',
       domain: config.auth.cookieDomain,
-      path: '/'
+      path: '/',
+      httpOnly: true
     }
   }));
 
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Debug middleware to log session and auth status
+  app.use((req, res, next) => {
+    console.log('Session ID:', req.sessionID);
+    console.log('Is Authenticated:', req.isAuthenticated());
+    console.log('Session:', req.session);
+    next();
+  });
 
   // Spotify strategy configuration
   passport.use(new SpotifyStrategy({
@@ -149,6 +160,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get('/api/auth/user', (req, res) => {
     console.log('Auth status:', req.isAuthenticated());
+    console.log('Session:', req.session);
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: 'Not authenticated' });
     }

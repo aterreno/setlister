@@ -5,13 +5,14 @@ import { setupVite, serveStatic, log } from "./vite";
 import { config } from "../config";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 // Set trust proxy before any middleware that depends on it
 if (config.isProd) {
-  app.set('trust proxy', 1);
+  app.set('trust proxy', true); // Changed to true to trust all proxies
 }
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Add security headers and CORS configuration
 app.use((req, res, next) => {
@@ -28,13 +29,19 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
 
+  // Debug headers in development
+  if (config.isDev) {
+    console.log('Request cookies:', req.cookies);
+    console.log('Request headers:', req.headers);
+  }
+
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
   next();
 });
 
-// Request logging middleware
+// Request logging middleware with enhanced debug info
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -53,11 +60,10 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      if (config.isDev || path.includes('auth')) {
+        logLine += `\nHeaders: ${JSON.stringify(req.headers)}`;
+        logLine += `\nCookies: ${JSON.stringify(req.cookies)}`;
       }
-
       log(logLine);
     }
   });
@@ -70,6 +76,7 @@ app.use((req, res, next) => {
     log("Starting server...");
     log(`Environment: ${config.isDev ? 'development' : 'production'}`);
     log(`Using server origin: ${config.baseUrl}`);
+    log(`Cookie domain: ${config.auth.cookieDomain}`);
 
     const server = registerRoutes(app);
 
