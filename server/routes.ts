@@ -7,6 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@db";
 import { users, playlists } from "@db/schema";
 import MemoryStore from "memorystore";
+import fetch from "node-fetch";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -79,6 +80,36 @@ export function registerRoutes(app: Express): Server {
       done(null, user);
     } catch (err) {
       done(err);
+    }
+  });
+
+  // Setlist.fm proxy endpoint
+  app.get('/api/setlists/search', async (req, res) => {
+    try {
+      const artistName = req.query.artistName;
+      if (!artistName) {
+        return res.status(400).json({ error: 'Artist name is required' });
+      }
+
+      const response = await fetch(
+        `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artistName as string)}`,
+        {
+          headers: {
+            'x-api-key': process.env.VITE_SETLIST_FM_API_KEY || '',
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Setlist.fm API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error('Setlist.fm API error:', error);
+      res.status(500).json({ error: 'Failed to fetch setlists' });
     }
   });
 
