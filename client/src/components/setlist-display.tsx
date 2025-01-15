@@ -3,7 +3,7 @@ import { useCreateSpotifyPlaylist } from "@/lib/spotify";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { parse, format } from "date-fns";
 import { Music, MapPin } from "lucide-react";
 
 interface SetlistDisplayProps {
@@ -31,6 +31,17 @@ export function SetlistDisplay({
     createPlaylist.mutate({ name, songs });
   };
 
+  const formatEventDate = (dateStr: string) => {
+    try {
+      // Parse the date string (format: "DD-MM-YYYY")
+      const parsedDate = parse(dateStr, "dd-MM-yyyy", new Date());
+      return format(parsedDate, "MMMM d, yyyy");
+    } catch (error) {
+      console.error("Error parsing date:", dateStr, error);
+      return dateStr; // Return original string if parsing fails
+    }
+  };
+
   return (
     <ScrollArea className="h-[600px] mt-6">
       <div className="space-y-4">
@@ -44,7 +55,7 @@ export function SetlistDisplay({
                 <div>
                   <h3 className="text-lg font-semibold">{setlist.artist.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(setlist.eventDate), "MMMM d, yyyy")}
+                    {formatEventDate(setlist.eventDate)}
                   </p>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                     <MapPin className="h-4 w-4" />
