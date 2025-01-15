@@ -27,18 +27,18 @@ app.use((req, res, next) => {
 
   // CORS headers
   const origin = req.headers.origin;
-  if (origin && origin.endsWith('.replit.app') || origin === config.baseUrl) {
+  if (origin === 'https://setlister.replit.app') {
     res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
 
   // Debug headers
   console.log('=== Request Debug ===');
   console.log('Origin:', req.headers.origin);
   console.log('Cookies:', req.headers.cookie);
-  console.log('Headers:', req.headers);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
   console.log('==================');
 
   if (req.method === 'OPTIONS') {

@@ -30,14 +30,14 @@ export function registerRoutes(app: Express): Server {
     secret: config.session.secret,
     resave: true,
     saveUninitialized: true,
-    name: 'setlister.sid', // Add specific session name
-    proxy: true, // Trust proxy
+    name: 'setlister.sid',
+    proxy: true,
     cookie: {
-      secure: config.isProd, // Must be true in production
+      secure: config.isProd,
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: config.isProd ? 'none' : 'lax',
-      domain: config.auth.cookieDomain,
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: 'none', // Changed to none for cross-site access
+      domain: config.isProd ? 'setlister.replit.app' : 'localhost', // Use exact domain in prod
       path: '/'
     }
   }));
