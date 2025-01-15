@@ -1,6 +1,11 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+
+// Load environment-specific configuration
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+require('dotenv').config({ path: envFile });
 
 const app = express();
 app.use(express.json());
@@ -21,10 +26,8 @@ app.use((req, res, next) => {
     'X-XSS-Protection': '1; mode=block',
   });
 
-  // CORS headers based on environment
-  const origin = isProd ? "https://setlister.replit.app" : "http://localhost:5000";
-
-  res.header("Access-Control-Allow-Origin", origin);
+  // CORS headers based on environment config
+  res.header("Access-Control-Allow-Origin", process.env.SERVER_ORIGIN);
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -35,7 +38,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging middleware with detailed error information
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -69,7 +72,8 @@ app.use((req, res, next) => {
 (async () => {
   try {
     log("Starting server...");
-    log(`Environment: ${app.get("env")}`); // Added log statement
+    log(`Environment: ${app.get("env")}`);
+    log(`Using server origin: ${process.env.SERVER_ORIGIN}`);
 
     const server = registerRoutes(app);
 

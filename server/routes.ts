@@ -16,14 +16,9 @@ export function registerRoutes(app: Express): Server {
     throw new Error("Missing required Spotify environment variables");
   }
 
-  // Set up environment-specific configurations
   const isProd = app.get("env") === "production";
-  const callbackURL = isProd
-    ? "https://setlister.replit.app/api/auth/spotify/callback"
-    : "http://localhost:5000/api/auth/spotify/callback";
-
   console.log("Environment:", app.get("env"));
-  console.log("Using Spotify callback URL:", callbackURL);
+  console.log("Using Spotify callback URL:", process.env.AUTH_CALLBACK_URL);
 
   // Session configuration with proper cookie settings
   app.use(session({
@@ -33,12 +28,12 @@ export function registerRoutes(app: Express): Server {
     secret: process.env.SESSION_SECRET || "development-secret",
     resave: false,
     saveUninitialized: false,
-    proxy: isProd, // Enable proxy support in production
+    proxy: isProd,
     cookie: {
-      secure: isProd, // Only use secure cookies in production
+      secure: isProd,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: isProd ? 'none' : 'lax',
-      domain: isProd ? '.replit.app' : undefined,
+      domain: process.env.COOKIE_DOMAIN,
       path: '/'
     }
   }));
@@ -46,11 +41,11 @@ export function registerRoutes(app: Express): Server {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Spotify strategy configuration with error logging
+  // Spotify strategy configuration
   passport.use(new SpotifyStrategy({
     clientID: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    callbackURL: callbackURL,
+    callbackURL: process.env.AUTH_CALLBACK_URL,
     scope: ['playlist-modify-public', 'playlist-modify-private']
   }, async (accessToken, refreshToken, expires_in, profile, done) => {
     try {
@@ -118,7 +113,7 @@ export function registerRoutes(app: Express): Server {
         `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artistName as string)}`,
         {
           headers: {
-            'x-api-key': process.env.VITE_SETLIST_FM_API_KEY || '',
+            'x-api-key': process.env.SETLIST_FM_API_KEY || '',
             'Accept': 'application/json'
           }
         }
@@ -136,6 +131,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Routes
   app.get('/api/auth/spotify',
     (req, res, next) => {
       console.log('Starting Spotify authentication');
@@ -145,11 +141,10 @@ export function registerRoutes(app: Express): Server {
   );
 
   app.get('/api/auth/spotify/callback',
-    passport.authenticate('spotify', { failureRedirect: '/' }),
-    (req, res) => {
-      console.log('Spotify authentication callback successful');
-      res.redirect('/')
-    }
+    passport.authenticate('spotify', { 
+      failureRedirect: '/',
+      successRedirect: process.env.AUTH_SUCCESS_REDIRECT
+    })
   );
 
   app.get('/api/auth/user', (req, res) => {
