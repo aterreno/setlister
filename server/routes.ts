@@ -25,7 +25,8 @@ export function registerRoutes(app: Express): Server {
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
     }
   }));
 
@@ -64,6 +65,7 @@ export function registerRoutes(app: Express): Server {
 
       return done(null, newUser);
     } catch (err) {
+      console.error('Authentication error:', err);
       return done(err as Error);
     }
   }));
@@ -79,6 +81,7 @@ export function registerRoutes(app: Express): Server {
       });
       done(null, user);
     } catch (err) {
+      console.error('Deserialization error:', err);
       done(err);
     }
   });
@@ -121,14 +124,14 @@ export function registerRoutes(app: Express): Server {
   );
 
   app.get('/api/auth/user', (req, res) => {
-    if (!req.user) {
+    if (!req.isAuthenticated()) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     res.json(req.user);
   });
 
   app.post('/api/playlists', async (req, res) => {
-    if (!req.user) {
+    if (!req.isAuthenticated()) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
