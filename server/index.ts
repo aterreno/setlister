@@ -2,18 +2,14 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-
-// Load environment-specific configuration
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
-require('dotenv').config({ path: envFile });
+import { config } from "../config";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Set trust proxy before any middleware that depends on it
-const isProd = app.get("env") === "production";
-if (isProd) {
+if (config.isProd) {
   app.set('trust proxy', 1);
 }
 
@@ -27,7 +23,7 @@ app.use((req, res, next) => {
   });
 
   // CORS headers based on environment config
-  res.header("Access-Control-Allow-Origin", process.env.SERVER_ORIGIN);
+  res.header("Access-Control-Allow-Origin", config.baseUrl);
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -72,8 +68,8 @@ app.use((req, res, next) => {
 (async () => {
   try {
     log("Starting server...");
-    log(`Environment: ${app.get("env")}`);
-    log(`Using server origin: ${process.env.SERVER_ORIGIN}`);
+    log(`Environment: ${config.isDev ? 'development' : 'production'}`);
+    log(`Using server origin: ${config.baseUrl}`);
 
     const server = registerRoutes(app);
 
@@ -85,23 +81,21 @@ app.use((req, res, next) => {
       res.status(status).json({ message });
     });
 
-    if (app.get("env") === "development") {
+    if (config.isDev) {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    const PORT = Number(process.env.PORT || 5000);
-
-    server.listen(PORT, "0.0.0.0", () => {
-      log(`Server environment: ${app.get("env")}`);
-      log(`Server listening on port ${PORT}`);
+    server.listen(config.port, "0.0.0.0", () => {
+      log(`Server environment: ${config.isDev ? 'development' : 'production'}`);
+      log(`Server listening on port ${config.port}`);
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {
       console.error('Server error:', error);
       if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use`);
+        console.error(`Port ${config.port} is already in use`);
       }
       process.exit(1);
     });

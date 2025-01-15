@@ -8,32 +8,32 @@ import { db } from "@db";
 import { users, playlists } from "@db/schema";
 import MemoryStore from "memorystore";
 import fetch from "node-fetch";
+import { config } from "../config";
 
 const MemoryStoreSession = MemoryStore(session);
 
 export function registerRoutes(app: Express): Server {
-  if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+  if (!config.spotify.clientId || !config.spotify.clientSecret) {
     throw new Error("Missing required Spotify environment variables");
   }
 
-  const isProd = app.get("env") === "production";
-  console.log("Environment:", app.get("env"));
-  console.log("Using Spotify callback URL:", process.env.AUTH_CALLBACK_URL);
+  console.log("Environment:", config.isDev ? "development" : "production");
+  console.log("Using Spotify callback URL:", config.auth.callbackUrl);
 
   // Session configuration with proper cookie settings
   app.use(session({
     store: new MemoryStoreSession({
       checkPeriod: 86400000 // prune expired entries every 24h
     }),
-    secret: process.env.SESSION_SECRET || "development-secret",
+    secret: config.session.secret,
     resave: false,
     saveUninitialized: false,
-    proxy: isProd,
+    proxy: config.isProd,
     cookie: {
-      secure: isProd,
+      secure: config.isProd,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: isProd ? 'none' : 'lax',
-      domain: process.env.COOKIE_DOMAIN,
+      sameSite: config.isProd ? 'none' : 'lax',
+      domain: config.auth.cookieDomain,
       path: '/'
     }
   }));
@@ -43,9 +43,9 @@ export function registerRoutes(app: Express): Server {
 
   // Spotify strategy configuration
   passport.use(new SpotifyStrategy({
-    clientID: process.env.SPOTIFY_CLIENT_ID,
-    clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    callbackURL: process.env.AUTH_CALLBACK_URL,
+    clientID: config.spotify.clientId,
+    clientSecret: config.spotify.clientSecret,
+    callbackURL: config.auth.callbackUrl,
     scope: ['playlist-modify-public', 'playlist-modify-private']
   }, async (accessToken, refreshToken, expires_in, profile, done) => {
     try {
@@ -113,7 +113,7 @@ export function registerRoutes(app: Express): Server {
         `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artistName as string)}`,
         {
           headers: {
-            'x-api-key': process.env.SETLIST_FM_API_KEY || '',
+            'x-api-key': config.setlistFm.apiKey,
             'Accept': 'application/json'
           }
         }
@@ -143,7 +143,7 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/auth/spotify/callback',
     passport.authenticate('spotify', { 
       failureRedirect: '/',
-      successRedirect: process.env.AUTH_SUCCESS_REDIRECT
+      successRedirect: config.auth.successRedirect
     })
   );
 
