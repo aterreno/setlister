@@ -16,9 +16,10 @@ export const playlists = pgTable("playlists", {
   spotifyId: text("spotify_id").notNull(),
   setlistId: text("setlist_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  shareId: text("share_id").unique(), // Unique identifier for sharing
-  isPublic: boolean("is_public").default(false), // Controls if playlist is publicly shareable
-  shares: integer("shares_count").default(0), // Track number of times shared
+  // Make new columns nullable or with defaults to be backwards compatible
+  shareId: text("share_id"), // Nullable for existing records
+  isPublic: boolean("is_public").default(false),
+  shares: integer("shares_count").default(0),
 });
 
 export const insertUserSchema = createInsertSchema(users);
