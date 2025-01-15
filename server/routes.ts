@@ -28,27 +28,31 @@ export function registerRoutes(app: Express): Server {
       checkPeriod: 86400000 // prune expired entries every 24h
     }),
     secret: config.session.secret,
-    resave: true, // Changed to true to ensure session is saved
-    saveUninitialized: true, // Changed to true to ensure cookie is set
-    proxy: config.isProd, // Ensure proxy settings for production
+    resave: true,
+    saveUninitialized: true,
+    name: 'setlister.sid', // Add specific session name
+    proxy: true, // Trust proxy
     cookie: {
-      secure: config.isProd,
+      secure: config.isProd, // Must be true in production
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: config.isProd ? 'none' : 'lax',
       domain: config.auth.cookieDomain,
-      path: '/',
-      httpOnly: true
+      path: '/'
     }
   }));
 
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Debug middleware to log session and auth status
+  // Add more detailed session debugging
   app.use((req, res, next) => {
+    console.log('=== Session Debug ===');
     console.log('Session ID:', req.sessionID);
     console.log('Is Authenticated:', req.isAuthenticated());
     console.log('Session:', req.session);
+    console.log('Cookies:', req.headers.cookie);
+    console.log('===================');
     next();
   });
 
@@ -152,7 +156,7 @@ export function registerRoutes(app: Express): Server {
   );
 
   app.get('/api/auth/spotify/callback',
-    passport.authenticate('spotify', { 
+    passport.authenticate('spotify', {
       failureRedirect: '/',
       successRedirect: config.auth.successRedirect
     })

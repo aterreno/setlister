@@ -8,7 +8,8 @@ const app = express();
 
 // Set trust proxy before any middleware that depends on it
 if (config.isProd) {
-  app.set('trust proxy', true); // Changed to true to trust all proxies
+  app.set('trust proxy', 1);
+  app.enable('trust proxy'); // Enable proxy support
 }
 
 app.use(express.json());
@@ -21,21 +22,26 @@ app.use((req, res, next) => {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
   });
 
-  // CORS headers based on environment config
-  res.header("Access-Control-Allow-Origin", config.baseUrl);
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-
-  // Debug headers in development
-  if (config.isDev) {
-    console.log('Request cookies:', req.cookies);
-    console.log('Request headers:', req.headers);
+  // CORS headers
+  const origin = req.headers.origin;
+  if (origin && origin.endsWith('.replit.app') || origin === config.baseUrl) {
+    res.header('Access-Control-Allow-Origin', origin);
   }
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
 
-  if (req.method === "OPTIONS") {
+  // Debug headers
+  console.log('=== Request Debug ===');
+  console.log('Origin:', req.headers.origin);
+  console.log('Cookies:', req.headers.cookie);
+  console.log('Headers:', req.headers);
+  console.log('==================');
+
+  if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   next();
