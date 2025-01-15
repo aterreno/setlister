@@ -16,7 +16,7 @@ export function registerRoutes(app: Express): Server {
     throw new Error("Missing required Spotify environment variables");
   }
 
-  // Set up callback URL based on environment
+  // Set up environment-specific configurations
   const isProd = app.get("env") === "production";
   const callbackURL = isProd
     ? "https://setlister.replit.app/api/auth/spotify/callback"
@@ -25,6 +25,7 @@ export function registerRoutes(app: Express): Server {
   console.log("Environment:", app.get("env"));
   console.log("Using Spotify callback URL:", callbackURL);
 
+  // Session configuration with proper cookie settings
   app.use(session({
     store: new MemoryStoreSession({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -32,16 +33,20 @@ export function registerRoutes(app: Express): Server {
     secret: process.env.SESSION_SECRET || "development-secret",
     resave: false,
     saveUninitialized: false,
+    proxy: isProd, // Enable proxy support in production
     cookie: {
-      secure: isProd,
+      secure: isProd, // Only use secure cookies in production
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.replit.app' : undefined,
+      path: '/'
     }
   }));
 
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Spotify strategy configuration with error logging
   passport.use(new SpotifyStrategy({
     clientID: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
@@ -49,6 +54,8 @@ export function registerRoutes(app: Express): Server {
     scope: ['playlist-modify-public', 'playlist-modify-private']
   }, async (accessToken, refreshToken, expires_in, profile, done) => {
     try {
+      console.log("Spotify auth callback received for profile:", profile.id);
+
       const existingUser = await db.query.users.findFirst({
         where: eq(users.spotifyId, profile.id)
       });
@@ -57,6 +64,7 @@ export function registerRoutes(app: Express): Server {
       expiresAt.setSeconds(expiresAt.getSeconds() + expires_in);
 
       if (existingUser) {
+        console.log("Updating existing user:", existingUser.id);
         await db.update(users).set({
           accessToken,
           refreshToken,
@@ -65,6 +73,7 @@ export function registerRoutes(app: Express): Server {
         return done(null, existingUser);
       }
 
+      console.log("Creating new user for Spotify ID:", profile.id);
       const [newUser] = await db.insert(users).values({
         spotifyId: profile.id,
         accessToken,
@@ -80,11 +89,13 @@ export function registerRoutes(app: Express): Server {
   }));
 
   passport.serializeUser((user: any, done) => {
+    console.log("Serializing user:", user.id);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log("Deserializing user:", id);
       const user = await db.query.users.findFirst({
         where: eq(users.id, id)
       });
@@ -125,14 +136,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/auth/spotify', passport.authenticate('spotify'));
+  app.get('/api/auth/spotify',
+    (req, res, next) => {
+      console.log('Starting Spotify authentication');
+      next();
+    },
+    passport.authenticate('spotify')
+  );
 
   app.get('/api/auth/spotify/callback',
     passport.authenticate('spotify', { failureRedirect: '/' }),
-    (_req, res) => res.redirect('/')
+    (req, res) => {
+      console.log('Spotify authentication callback successful');
+      res.redirect('/')
+    }
   );
 
   app.get('/api/auth/user', (req, res) => {
+    console.log('Auth status:', req.isAuthenticated());
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
