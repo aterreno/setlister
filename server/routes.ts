@@ -12,11 +12,17 @@ import fetch from "node-fetch";
 const MemoryStoreSession = MemoryStore(session);
 
 export function registerRoutes(app: Express): Server {
-  if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET || !process.env.SPOTIFY_CALLBACK_URL) {
+  if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
     throw new Error("Missing required Spotify environment variables");
   }
 
-  const callbackURL = process.env.SPOTIFY_CALLBACK_URL;
+  // Set up callback URL based on environment
+  const isProd = app.get("env") === "production";
+  const callbackURL = isProd
+    ? "https://setlister.replit.app/api/auth/spotify/callback"
+    : "http://localhost:5000/api/auth/spotify/callback";
+
+  console.log("Environment:", app.get("env"));
   console.log("Using Spotify callback URL:", callbackURL);
 
   app.use(session({
@@ -27,7 +33,7 @@ export function registerRoutes(app: Express): Server {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: isProd,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax'
     }
