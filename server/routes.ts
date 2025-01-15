@@ -16,6 +16,9 @@ export function registerRoutes(app: Express): Server {
     throw new Error("Missing required Spotify environment variables");
   }
 
+  const callbackURL = process.env.SPOTIFY_CALLBACK_URL;
+  console.log("Using Spotify callback URL:", callbackURL);
+
   app.use(session({
     store: new MemoryStoreSession({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -36,7 +39,7 @@ export function registerRoutes(app: Express): Server {
   passport.use(new SpotifyStrategy({
     clientID: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    callbackURL: process.env.SPOTIFY_CALLBACK_URL,
+    callbackURL: callbackURL,
     scope: ['playlist-modify-public', 'playlist-modify-private']
   }, async (accessToken, refreshToken, expires_in, profile, done) => {
     try {
