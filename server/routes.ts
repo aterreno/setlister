@@ -304,3 +304,23 @@ export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
   return httpServer;
 }
+// Add these new endpoints
+app.post('/api/subscribe', async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    await db.update(users)
+      .set({ 
+        isPremium: true,
+        subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        monthlyPlaylistLimit: 999999
+      })
+      .where(eq(users.id, (req.user as any).id));
+
+    res.json({ message: 'Subscription activated' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to activate subscription' });
+  }
+});

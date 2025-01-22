@@ -31,3 +31,15 @@ export const insertPlaylistSchema = createInsertSchema(playlists);
 export const selectPlaylistSchema = createSelectSchema(playlists);
 export type InsertPlaylist = typeof playlists.$inferInsert;
 export type SelectPlaylist = typeof playlists.$inferSelect;
+import { integer, pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: integer('id').primaryKey(),
+  spotifyId: text('spotify_id').notNull(),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  isPremium: boolean('is_premium').default(false),
+  subscriptionEndsAt: timestamp('subscription_ends_at'),
+  monthlyPlaylistLimit: integer('monthly_playlist_limit').default(3),
+});
