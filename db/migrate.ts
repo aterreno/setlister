@@ -1,7 +1,6 @@
 
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
-import * as schema from "./schema";
 
 const runMigration = async () => {
   if (!process.env.DATABASE_URL) {
@@ -16,23 +15,17 @@ const runMigration = async () => {
   console.log("Running migrations...");
   
   try {
-    // Drop existing tables if they exist
+    // Drop tables in correct order
     await db.execute(`
-      DO $$ 
-      DECLARE 
-        r RECORD;
-      BEGIN
-        FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-          EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-        END LOOP;
-      END $$;
+      DROP TABLE IF EXISTS playlists CASCADE;
+      DROP TABLE IF EXISTS users CASCADE;
     `);
     
     console.log("Dropped existing tables");
 
-    // Create tables from schema
+    // Create tables in correct order with all required columns
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         id SERIAL PRIMARY KEY,
         spotify_id TEXT UNIQUE NOT NULL,
         access_token TEXT NOT NULL,
@@ -44,7 +37,7 @@ const runMigration = async () => {
         monthly_playlist_limit INTEGER DEFAULT 3
       );
 
-      CREATE TABLE IF NOT EXISTS playlists (
+      CREATE TABLE playlists (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
         spotify_id TEXT NOT NULL,
@@ -56,10 +49,10 @@ const runMigration = async () => {
       );
     `);
     
-    console.log("Created new tables");
+    console.log("Created new tables successfully");
   } catch (error) {
     console.error("Migration failed:", error);
-    throw error;
+    process.exit(1);
   }
   
   process.exit(0);
