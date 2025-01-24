@@ -1,3 +1,4 @@
+
 import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
@@ -8,6 +9,9 @@ export const users = pgTable("users", {
   refreshToken: text("refresh_token").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  isPremium: boolean("is_premium").default(false),
+  subscriptionEndsAt: timestamp("subscription_ends_at"),
+  monthlyPlaylistLimit: integer("monthly_playlist_limit").default(3),
 });
 
 export const playlists = pgTable("playlists", {
@@ -16,8 +20,7 @@ export const playlists = pgTable("playlists", {
   spotifyId: text("spotify_id").notNull(),
   setlistId: text("setlist_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // Make new columns nullable or with defaults to be backwards compatible
-  shareId: text("share_id"), // Nullable for existing records
+  shareId: text("share_id"),
   isPublic: boolean("is_public").default(false),
   shares: integer("shares_count").default(0),
 });
@@ -31,15 +34,3 @@ export const insertPlaylistSchema = createInsertSchema(playlists);
 export const selectPlaylistSchema = createSelectSchema(playlists);
 export type InsertPlaylist = typeof playlists.$inferInsert;
 export type SelectPlaylist = typeof playlists.$inferSelect;
-import { integer, pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
-
-export const users = pgTable('users', {
-  id: integer('id').primaryKey(),
-  spotifyId: text('spotify_id').notNull(),
-  accessToken: text('access_token').notNull(),
-  refreshToken: text('refresh_token').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  isPremium: boolean('is_premium').default(false),
-  subscriptionEndsAt: timestamp('subscription_ends_at'),
-  monthlyPlaylistLimit: integer('monthly_playlist_limit').default(3),
-});
