@@ -1,7 +1,7 @@
 
-const { getDefaultConfig } = require('@react-native-community/cli-platform-android');
+const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 
-module.exports = {
+const config = {
   transformer: {
     getTransformOptions: async () => ({
       transform: {
@@ -13,5 +13,7 @@ module.exports = {
   server: {
     port: 8081
   },
-  watchFolders: [__dirname],
+  watchFolders: [__dirname]
 };
+
+module.exports = mergeConfig(getDefaultConfig(__dirname), config);
