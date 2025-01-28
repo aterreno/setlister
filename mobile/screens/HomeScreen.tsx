@@ -1,43 +1,25 @@
-
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { View, Text, StyleSheet } from 'react-native';
 
-export default function HomeScreen({ navigation }) {
+const HomeScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Setlister</Text>
-      <TouchableOpacity 
-        style={styles.button}
-        onPress={() => {/* Add Spotify login */}}
-      >
-        <Text style={styles.buttonText}>Login with Spotify</Text>
-      </TouchableOpacity>
+      <Text style={styles.text}>Welcome to Setlister</Text>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#1DB954', 
-    padding: 15,
-    borderRadius: 25,
-    width: '80%',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  buttonText: {
-    color: 'white',
+  text: {
+    fontSize: 24,
     fontWeight: 'bold',
   },
 });
+
+export default HomeScreen;
