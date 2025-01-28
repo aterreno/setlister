@@ -11,9 +11,12 @@
     "db:push": "drizzle-kit push",
     "mobile:start": "react-native start",
     "android": "react-native run-android",
-    "ios": "react-native run-ios"
+    "ios": "react-native run-ios",
+    "pod-install": "cd ios && pod install"
   },
   "dependencies": {
+    "@react-native-community/cli-platform-ios": "^12.3.5",
+    "react-native": "^0.73.2",
     "@hookform/resolvers": "^3.9.1",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@radix-ui/react-accordion": "^1.2.1",
