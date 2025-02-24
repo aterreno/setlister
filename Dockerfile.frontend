@@ -1,0 +1,37 @@
+# Build stage
+FROM node:20 as build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies and explicitly install esbuild
+RUN npm install && \
+    npm install -g esbuild && \
+    npm cache clean --force
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the frontend application
+RUN npm run build
+
+# Verify the build output and list contents for debugging
+RUN ls -la dist/public/assets || true
+
+# Production stage
+FROM nginx:alpine
+
+# Copy the built assets from build stage (using the correct path)
+COPY --from=build /app/dist/public /usr/share/nginx/html/
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"] 
