@@ -18,6 +18,11 @@ export function registerRoutes(app: Express): Server {
     throw new Error("Missing required Spotify environment variables");
   }
 
+  // Add health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'healthy' });
+  });
+
   console.log("Environment:", config.isDev ? "development" : "production");
   console.log("Using Spotify callback URL:", config.auth.callbackUrl);
   console.log("Cookie Domain:", config.auth.cookieDomain);
@@ -38,7 +43,7 @@ export function registerRoutes(app: Express): Server {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: 'none', // Changed to none for cross-site access
-      domain: config.isProd ? 'setlister.replit.app' : 'localhost', // Use exact domain in prod
+      domain: config.isProd ? 'localhost' : 'localhost', // Use exact domain in prod
       path: '/'
     }
   }));
@@ -61,7 +66,7 @@ export function registerRoutes(app: Express): Server {
   passport.use(new SpotifyStrategy({
     clientID: config.spotify.clientId,
     clientSecret: config.spotify.clientSecret,
-    callbackURL: config.auth.callbackUrl,
+    callbackURL: process.env.SPOTIFY_CALLBACK_URL || config.auth.callbackUrl,
     scope: ['playlist-modify-public', 'playlist-modify-private']
   }, async (accessToken, refreshToken, expires_in, profile, done) => {
     try {

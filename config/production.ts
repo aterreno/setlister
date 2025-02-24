@@ -1,10 +1,10 @@
 import type { Config } from "./index";
 
 const productionConfig: Partial<Config> = {
-  baseUrl: 'https://setlister.replit.app',
+  baseUrl: 'https://localhost',
   auth: {
-    callbackUrl: 'https://setlister.replit.app/api/auth/spotify/callback',
-    successRedirect: 'https://setlister.replit.app',
+    callbackUrl: 'https://localhost/api/auth/spotify/callback',
+    successRedirect: 'https://localhost',
     cookieDomain: '.replit.app'  // Changed back to .replit.app to work with Replit's domain
   },
   session: {

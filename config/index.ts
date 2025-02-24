@@ -7,6 +7,11 @@ const envSchema = z.object({
   // Auth Configuration
   SPOTIFY_CLIENT_ID: z.string(),
   SPOTIFY_CLIENT_SECRET: z.string(),
+  AUTH_CALLBACK_URL: z.string().optional(),
+  AUTH_SUCCESS_REDIRECT: z.string().optional(),
+  SERVER_ORIGIN: z.string().optional(),
+  COOKIE_DOMAIN: z.string().optional(),
+  BASE_URL: z.string().optional(),
 
   // API Keys
   SETLIST_FM_API_KEY: z.string(),
@@ -38,22 +43,22 @@ const baseConfig = {
 // Environment-specific configuration
 const envConfig = {
   development: {
-    baseUrl: 'http://localhost:5000',
+    baseUrl: env.BASE_URL || 'http://localhost:5000',
     auth: {
-      callbackUrl: 'http://localhost:5000/api/auth/spotify/callback',
-      successRedirect: 'http://localhost:5000',
-      cookieDomain: 'localhost',
+      callbackUrl: env.AUTH_CALLBACK_URL || 'http://localhost:5000/api/auth/spotify/callback',
+      successRedirect: env.AUTH_SUCCESS_REDIRECT || 'http://localhost:5000',
+      cookieDomain: env.COOKIE_DOMAIN || 'localhost',
     },
     session: {
       secret: 'development-secret-key',
     },
   },
   production: {
-    baseUrl: 'https://setlister.replit.app',
+    baseUrl: env.BASE_URL || 'https://localhost',
     auth: {
-      callbackUrl: 'https://setlister.replit.app/api/auth/spotify/callback',
-      successRedirect: 'https://setlister.replit.app',
-      cookieDomain: '.replit.app',
+      callbackUrl: env.AUTH_CALLBACK_URL || 'https://localhost/api/auth/spotify/callback',
+      successRedirect: env.AUTH_SUCCESS_REDIRECT || 'https://localhost',
+      cookieDomain: env.COOKIE_DOMAIN || 'localhost',
     },
     session: {
       secret: 'production-secret-key',

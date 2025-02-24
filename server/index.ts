@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 
   // CORS headers
   const origin = req.headers.origin;
-  if (origin === 'https://setlister.replit.app') {
+  if (origin === 'https://localhost') {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
