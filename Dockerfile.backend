@@ -3,20 +3,21 @@ FROM node:20
 
 # Set working directory
 WORKDIR /app
+RUN mkdir -p /app/dist
 
 # Copy package files
 COPY package*.json ./
+
+# Copy the rest of the application code
+COPY . .
 
 # Install dependencies and explicitly install esbuild
 RUN npm install && \
     npm install -g esbuild && \
     npm cache clean --force
 
-# Copy the rest of the application code
-COPY . .
-
 # Build the application
-RUN npm run build
+RUN npm run backend-build
 
 # Expose the port the app runs on
 EXPOSE 3000

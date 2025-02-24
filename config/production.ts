@@ -5,7 +5,7 @@ const productionConfig: Partial<Config> = {
   auth: {
     callbackUrl: 'https://localhost/api/auth/spotify/callback',
     successRedirect: 'https://localhost',
-    cookieDomain: '.replit.app'  // Changed back to .replit.app to work with Replit's domain
+    cookieDomain: '.localhost'  // Changed back to .replit.app to work with Replit's domain
   },
   session: {
     secret: 'production-secret-key'

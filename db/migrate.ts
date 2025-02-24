@@ -1,6 +1,5 @@
 
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
+import { drizzle } from 'drizzle-orm/postgres-js';
 
 const runMigration = async () => {
   if (!process.env.DATABASE_URL) {
@@ -8,8 +7,7 @@ const runMigration = async () => {
   }
 
   const db = drizzle({
-    connection: process.env.DATABASE_URL,
-    ws,
+    connection: process.env.DATABASE_URL    
   });
 
   console.log("Running migrations...");

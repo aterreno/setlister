@@ -16,7 +16,7 @@ RUN npm install && \
 COPY . .
 
 # Build the frontend application
-RUN npm run build
+RUN npm run frontend-build
 
 # Verify the build output and list contents for debugging
 RUN ls -la dist/public/assets || true

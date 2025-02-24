@@ -45,8 +45,8 @@ const envConfig = {
   development: {
     baseUrl: env.BASE_URL || 'http://localhost:5000',
     auth: {
-      callbackUrl: env.AUTH_CALLBACK_URL || 'http://localhost:5000/api/auth/spotify/callback',
-      successRedirect: env.AUTH_SUCCESS_REDIRECT || 'http://localhost:5000',
+      callbackUrl: env.AUTH_CALLBACK_URL || 'http://localhost/api/auth/spotify/callback',
+      successRedirect: env.AUTH_SUCCESS_REDIRECT || 'http://localhost',
       cookieDomain: env.COOKIE_DOMAIN || 'localhost',
     },
     session: {
